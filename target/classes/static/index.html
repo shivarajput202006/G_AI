@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUEGUARD AI | MSME Payment Protection & Recovery</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="authScreen" class="auth-wrapper">
+    <div class="auth-card">
+        <div class="brand-pill">🛡️ DUEGUARD AI</div>
+        <h1>Payment Protection & Recovery Assistant</h1>
+        <p class="subtitle">Track dues. Predict payment risk. Stop UPI fraud. Recover faster.</p>
+
+        <div class="auth-tabs">
+            <button id="tabLogin" class="active" onclick="switchAuthTab('login')">Business Login</button>
+            <button id="tabRegister" onclick="switchAuthTab('register')">Register MSME</button>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Business Email</label>
+                <input type="email" id="loginEmail" value="demo@dueguard.in" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" value="123456" required>
+            </div>
+            <button type="submit" class="btn-primary full-width">Launch Dashboard →</button>
+            <p class="hint">Pre-loaded Demo: <b>demo@dueguard.in</b> / <b>123456</b></p>
+        </form>
+
+        <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>MSME Business Name</label>
+                <input type="text" id="regBizName" placeholder="e.g., Sharma Enterprises" required>
+            </div>
+            <div class="form-group">
+                <label>Owner Name</label>
+                <input type="text" id="regOwner" placeholder="e.g., Rajesh Sharma" required>
+            </div>
+            <div class="form-group">
+                <label>Official Business UPI ID</label>
+                <input type="text" id="regUpi" placeholder="e.g., sharma@okicici" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="regEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPass" required>
+            </div>
+            <button type="submit" class="btn-primary full-width">Create Protected Account</button>
+        </form>
+    </div>
+</div>
+
+<div id="appShell" class="app-layout hidden">
+    <aside class="sidebar">
+        <div class="logo-box">
+            <span class="shield-icon">🛡️</span>
+            <div>
+                <h2>DUEGUARD <span>AI</span></h2>
+                <small>MSME Recovery Shield</small>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <button class="nav-item active" onclick="showSection('dashboard', this)">📊 Dashboard Overview</button>
+            <button class="nav-item" onclick="showSection('add', this)">📄 Add / Scan Invoice (AI)</button>
+            <button class="nav-item" onclick="showSection('upi', this)">🔒 UPI Safety Shield</button>
+            <button class="nav-item" onclick="showSection('customers', this)">👥 Customer Ledger</button>
+            <button class="nav-item" onclick="showSection('profile', this)">⚙️ Business & UPI Profile</button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="biz-badge">
+                <strong id="sideBizName">Business</strong>
+                <span id="sideUpi">UPI: ---</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <section id="sec-dashboard" class="view-section">
+            <header class="top-header">
+                <div>
+                    <h1>Payment Command Center</h1>
+                    <p>Real-time receivables, AI risk scoring & smart recovery actions</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <a href="/smart-recovery.html" style="background:linear-gradient(135deg,#7c3aed,#6366f1); color:white; padding:10px 16px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:14px;">
+                        🛡️ AI Risk & Legal Shield
+                    </a>
+                    <button class="btn-primary" onclick="showSection('add', document.querySelectorAll('.nav-item')[1])">+ New Invoice / AI Scan</button>
+                </div>
+            </header>
+
+            <div class="kpi-grid">
+                <div class="kpi-card blue">
+                    <span class="kpi-label">TOTAL RECEIVABLES</span>
+                    <h2 id="kpiTotal">₹0</h2>
+                    <small>Active unpaid dues</small>
+                </div>
+                <div class="kpi-card red">
+                    <span class="kpi-label">OVERDUE AMOUNT</span>
+                    <h2 id="kpiOverdue">₹0</h2>
+                    <small>Immediate recovery needed</small>
+                </div>
+                <div class="kpi-card amber">
+                    <span class="kpi-label">UPCOMING & DUE TODAY</span>
+                    <h2 id="kpiUpcoming">₹0</h2>
+                    <small id="kpiDueTodaySub">Due today: ₹0</small>
+                </div>
+                <div class="kpi-card green">
+                    <span class="kpi-label">PAID & RECOVERED</span>
+                    <h2 id="kpiPaid">₹0</h2>
+                    <small>Verified receipts</small>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Invoices & AI Recovery Actions</h3>
+                    <div class="filter-pills">
+                        <button class="pill active" onclick="filterInvoices('ALL', this)">All</button>
+                        <button class="pill" onclick="filterInvoices('OVERDUE', this)">Overdue</button>
+                        <button class="pill" onclick="filterInvoices('DUE_TODAY', this)">Due Today</button>
+                        <button class="pill" onclick="filterInvoices('UPCOMING', this)">Upcoming</button>
+                        <button class="pill" onclick="filterInvoices('PAID', this)">Paid</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>AI Intelligence & Recovery Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-add" class="view-section hidden">
+            <header class="top-header">
+                <div>
+                    <h1>Add Invoice or AI Bill Extractor</h1>
+                    <p>Upload a photo/PDF of any invoice — Gemini AI extracts details automatically</p>
+                </div>
+            </header>
+            <div class="two-col">
+                <div class="panel">
+                    <h3>✨ AI Document Extractor (OCR)</h3>
+                    <div class="upload-box" onclick="document.getElementById('ocrFile').click()">
+                        <input type="file" id="ocrFile" accept="image/*,.pdf" hidden onchange="runAiOcr()">
+                        <div class="upload-icon">📸</div>
+                        <p id="ocrStatusText">Click to upload Invoice Image / PDF</p>
+                        <small>Auto-fills all invoice fields using Gemini Vision AI</small>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>📝 Confirm & Save Invoice</h3>
+                    <form onsubmit="saveNewInvoice(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Customer / Buyer Name</label>
+                                <input type="text" id="invCustName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Invoice Number</label>
+                                <input type="text" id="invNumber" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Invoice Amount (₹)</label>
+                                <input type="number" step="0.01" id="invAmount" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Customer WhatsApp / Phone</label>
+                                <input type="text" id="invPhone" placeholder="9198XXXXXXXX">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Invoice Date</label>
+                                <input type="date" id="invDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Due Date</label>
+                                <input type="date" id="invDueDate" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary full-width">Save & Activate Smart Tracking</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-upi" class="view-section hidden">
+            <header class="top-header">
+                <div>
+                    <h1>🔒 UPI Payment Safety Shield</h1>
+                    <p>Detect fake screenshots & wrong payee UPI IDs before releasing goods</p>
+                </div>
+            </header>
+            <div class="two-col">
+                <div class="panel">
+                    <h3>1️⃣ Quick UPI ID & Amount Verification</h3>
+                    <p class="muted" style="margin-bottom:14px;">Your Registered UPI: <b id="shieldExpectedUpi" style="color:#38bdf8;">---</b></p>
+                    <form onsubmit="verifyUpiText(event)">
+                        <div class="form-group">
+                            <label>Payee UPI ID Shown by Customer</label>
+                            <input type="text" id="checkClaimedUpi" placeholder="e.g., apexindustries@okhdfcbank" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Expected Amount (₹)</label>
+                                <input type="number" id="checkExpectedAmt" value="48000" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Receipt Amount (₹)</label>
+                                <input type="number" id="checkClaimedAmt" value="48000" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary full-width">Verify UPI Match</button>
+                    </form>
+                </div>
+                <div class="panel">
+                    <h3>2️⃣ AI Fake Payment Screenshot Detector</h3>
+                    <div class="form-group">
+                        <label>Expected Payment Amount (₹)</label>
+                        <input type="number" id="imgExpectedAmt" value="48000">
+                    </div>
+                    <div class="upload-box" onclick="document.getElementById('upiFile').click()">
+                        <input type="file" id="upiFile" accept="image/*" hidden onchange="verifyUpiImage()">
+                        <div class="upload-icon">🔍</div>
+                        <p id="upiImgStatus">Upload Customer's WhatsApp Payment Screenshot</p>
+                        <small>AI checks Receiver UPI, Amount & UTR</small>
+                    </div>
+                </div>
+            </div>
+            <div id="upiResultBox" class="panel hidden" style="margin-top:20px;"></div>
+        </section>
+
+        <section id="sec-customers" class="view-section hidden">
+            <header class="top-header">
+                <div>
+                    <h1>👥 Customer Credit & Payment Behavior Ledger</h1>
+                    <p>Historical payment discipline and delay analytics</p>
+                </div>
+            </header>
+            <div class="panel">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Phone</th>
+                        <th>Known UPI ID</th>
+                        <th>Total Invoices</th>
+                        <th>Delayed Count</th>
+                        <th>Avg Delay</th>
+                    </tr>
+                    </thead>
+                    <tbody id="customerTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="sec-profile" class="view-section hidden">
+            <header class="top-header">
+                <div>
+                    <h1>⚙️ MSME Business & Official UPI Settings</h1>
+                    <p>Configure verified UPI ID and MSME registration details</p>
+                </div>
+            </header>
+            <div class="panel" style="max-width:650px;">
+                <form onsubmit="updateProfile(event)">
+                    <div class="form-group">
+                        <label>Business Name</label>
+                        <input type="text" id="profBizName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Owner Name</label>
+                        <input type="text" id="profOwner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Official Registered UPI ID</label>
+                        <input type="text" id="profUpi" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>GSTIN Number</label>
+                            <input type="text" id="profGst">
+                        </div>
+                        <div class="form-group">
+                            <label>Udyam Registration Number</label>
+                            <input type="text" id="profUdyam">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Save Business Profile</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="aiModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="modal-head">
+            <h3 id="modalTitle">AI Assistant</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+    </div>
+</div>
+
+<!-- FLOATING AI VOICE ASSISTANT -->
+<div id="voiceWidget" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+    <div id="voiceBubble" class="hidden" style="background:#1e293b;border:1px solid #38bdf8;color:#f8fafc;padding:14px 16px;border-radius:14px;width:330px;box-shadow:0 10px 30px rgba(0,0,0,0.6);font-size:13px;line-height:1.5;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:6px;">
+            <strong style="color:#38bdf8;">🎙️ DueGuard Voice AI</strong>
+            <div style="display:flex;gap:6px;">
+                <button onclick="replayLastVoice()" style="background:#0f172a;border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;">🔊 Listen</button>
+                <button onclick="stopVoiceAndClose()" style="background:#ef4444;border:none;color:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;font-weight:bold;">← Close</button>
+            </div>
+        </div>
+        <div id="voiceTranscript" style="color:#94a3b8;font-style:italic;margin-bottom:6px;">Tap mic to speak, or type below:</div>
+        <div id="voiceReply" style="color:#f1f5f9;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+            <input type="text" id="voiceTextInput" placeholder="e.g. Shiv Enterprises ke kitne days left hai?" onkeydown="if(event.key==='Enter') sendTypedVoiceQuery()" style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:12px;">
+            <button onclick="sendTypedVoiceQuery()" style="padding:7px 12px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-size:12px;font-weight:bold;">Ask</button>
+        </div>
+    </div>
+    <button id="micFabBtn" onclick="toggleVoiceAssistant()" title="Ask DueGuard AI by Voice"
+            style="width:58px;height:58px;border-radius:50%;border:none;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#fff;font-size:24px;cursor:pointer;box-shadow:0 8px 25px rgba(37,99,235,0.5);display:flex;align-items:center;justify-content:center;">
+        🎙️
+    </button>
+</div>
+
+<script>
+    let currentUser = null;
+    let allInvoices = [];
+    let lastSpokenReply = '';
+
+    function switchAuthTab(tab) {
+        document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+        document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+        document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+        document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            })
+        });
+        if (!res.ok) return alert('Invalid credentials!');
+        currentUser = await res.json();
+        enterApp();
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                businessName: document.getElementById('regBizName').value,
+                ownerName: document.getElementById('regOwner').value,
+                registeredUpiId: document.getElementById('regUpi').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPass').value
+            })
+        });
+        if (!res.ok) return alert('Registration failed or email already exists.');
+        currentUser = await res.json();
+        enterApp();
+    }
+
+    function enterApp() {
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('appShell').classList.remove('hidden');
+        syncUserUI();
+        loadDashboard();
+    }
+
+    function logout() {
+        currentUser = null;
+        location.reload();
+    }
+
+    function syncUserUI() {
+        document.getElementById('sideBizName').innerText = currentUser.businessName;
+        document.getElementById('sideUpi').innerText = 'UPI: ' + (currentUser.registeredUpiId || 'Not Set');
+        document.getElementById('shieldExpectedUpi').innerText = currentUser.registeredUpiId || 'Not Set';
+        document.getElementById('profBizName').value = currentUser.businessName || '';
+        document.getElementById('profOwner').value = currentUser.ownerName || '';
+        document.getElementById('profUpi').value = currentUser.registeredUpiId || '';
+        document.getElementById('profGst').value = currentUser.gstNumber || '';
+        document.getElementById('profUdyam').value = currentUser.udyamNumber || '';
+    }
+
+    function showSection(secId, btn) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('sec-' + secId).classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        if (secId === 'dashboard') loadDashboard();
+        if (secId === 'customers') loadCustomers();
+    }
+
+    async function loadDashboard() {
+        const res = await fetch('/api/dashboard/' + currentUser.id);
+        const data = await res.json();
+        document.getElementById('kpiTotal').innerText = '₹' + data.totalReceivables.toLocaleString('en-IN');
+        document.getElementById('kpiOverdue').innerText = '₹' + data.overdueAmount.toLocaleString('en-IN');
+        document.getElementById('kpiUpcoming').innerText = '₹' + data.upcomingAmount.toLocaleString('en-IN');
+        document.getElementById('kpiDueTodaySub').innerText = 'Due today: ₹' + data.dueTodayAmount.toLocaleString('en-IN');
+        document.getElementById('kpiPaid').innerText = '₹' + data.paidAmount.toLocaleString('en-IN');
+        allInvoices = data.invoices;
+        renderInvoices(allInvoices);
+    }
+
+    function filterInvoices(status, btn) {
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        if (status === 'ALL') renderInvoices(allInvoices);
+        else renderInvoices(allInvoices.filter(i => i.status === status));
+    }
+
+    function renderInvoices(list) {
+        const tbody = document.getElementById('invoiceTableBody');
+        tbody.innerHTML = list.map(inv => {
+            const lateTag = inv.overdueDays > 0 ? '<br><small style="color:#f87171">' + inv.overdueDays + ' days late</small>' : '';
+            const legalBtn = inv.overdueDays >= 15 ? '<button class="btn-sm amber" onclick="openMsmeModal(' + inv.id + ')">⚖️ MSME Legal</button>' : '';
+            const actions = inv.status !== 'PAID'
+                ? '<div class="act-group">'
+                  + '<button class="btn-sm" onclick="openRiskModal(' + inv.id + ')">🎯 AI Risk</button>'
+                  + '<button class="btn-sm" onclick="openReminderModal(' + inv.id + ', \'' + (inv.customerPhone || '') + '\')">💬 AI Remind</button>'
+                  + '<button class="btn-sm green" onclick="openPaidModal(' + inv.id + ', \'' + inv.invoiceNumber + '\', ' + inv.amount + ')">✔ Mark Paid</button>'
+                  + legalBtn + '</div>'
+                : '<small style="color:#34d399">Paid (' + (inv.paymentRef || 'Verified') + ')</small>';
+
+            return '<tr>'
+                + '<td><b>' + inv.invoiceNumber + '</b></td>'
+                + '<td>' + inv.customerName + '<br><small class="muted">' + (inv.customerPhone || '') + '</small></td>'
+                + '<td><b>₹' + inv.amount.toLocaleString('en-IN') + '</b></td>'
+                + '<td>' + inv.dueDate + lateTag + '</td>'
+                + '<td><span class="badge ' + inv.status + '">' + inv.status.replace('_', ' ') + '</span></td>'
+                + '<td>' + actions + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    async function runAiOcr() {
+        const file = document.getElementById('ocrFile').files[0];
+        if (!file) return;
+        document.getElementById('ocrStatusText').innerText = '⏳ Gemini AI scanning invoice...';
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/invoices/extract-ai', { method: 'POST', body: fd });
+        const data = await res.json();
+        document.getElementById('invCustName').value = data.customerName || '';
+        document.getElementById('invNumber').value = data.invoiceNumber || '';
+        document.getElementById('invAmount').value = data.amount || '';
+        document.getElementById('invDate').value = data.invoiceDate || '';
+        document.getElementById('invDueDate').value = data.dueDate || '';
+        document.getElementById('invPhone').value = data.customerPhone || '';
+        document.getElementById('ocrStatusText').innerText = '✅ Extracted! Review details & save.';
+    }
+
+    async function saveNewInvoice(e) {
+        e.preventDefault();
+        const payload = {
+            userId: currentUser.id,
+            customerName: document.getElementById('invCustName').value,
+            invoiceNumber: document.getElementById('invNumber').value,
+            amount: parseFloat(document.getElementById('invAmount').value),
+            invoiceDate: document.getElementById('invDate').value,
+            dueDate: document.getElementById('invDueDate').value,
+            customerPhone: document.getElementById('invPhone').value
+        };
+        await fetch('/api/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        alert('Invoice saved & monitoring activated!');
+        showSection('dashboard', document.querySelectorAll('.nav-item')[0]);
+    }
+
+    function openModal(title, html) {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('aiModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('aiModal').classList.add('hidden');
+    }
+
+    async function openRiskModal(id) {
+        openModal('🎯 AI Payment Risk Analysis', '<p>Calculating risk score with Gemini AI...</p>');
+        const res = await fetch('/api/recovery/risk/' + id);
+        const data = await res.json();
+        const color = data.riskScore >= 70 ? '#ef4444' : (data.riskScore >= 40 ? '#f59e0b' : '#10b981');
+        openModal('🎯 Risk Profile: ' + data.customerName,
+            '<div class="risk-meter" style="color:' + color + '">' + data.riskScore + '/100 — ' + data.riskLevel + '</div>' +
+            '<p class="muted" style="margin-bottom:12px;">Overdue by ' + data.overdueDays + ' days</p>' +
+            '<div class="ai-box">' + data.aiAnalysis + '</div>');
+    }
+
+    async function openReminderModal(id, phone) {
+        openModal('💬 AI Smart Follow-up Generator', '<p>Drafting Hindi & English reminders...</p>');
+        const res = await fetch('/api/recovery/reminder/' + id);
+        const data = await res.json();
+        let cleanPhone = (phone || '').replace(/\D/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+        const hindiText = (data.hindiMessage || '').trim();
+        const engText = (data.englishMessage || '').trim();
+        const waHindi = 'https://api.whatsapp.com/send?phone=' + cleanPhone + '&text=' + encodeURIComponent(hindiText);
+        const waEng = 'https://api.whatsapp.com/send?phone=' + cleanPhone + '&text=' + encodeURIComponent(engText);
+
+        openModal('💬 Smart Follow-up (' + (data.tone || 'Reminder') + ')',
+            '<label class="muted">Hindi Reminder:</label>' +
+            '<div class="ai-box" id="hindiMsgBox">' + hindiText + '</div>' +
+            '<a href="' + waHindi + '" target="_blank" class="btn-primary" style="display:inline-block;text-decoration:none;margin-bottom:16px;">📲 Send Hindi on WhatsApp</a><br>' +
+            '<label class="muted">English Reminder:</label>' +
+            '<div class="ai-box" id="engMsgBox">' + engText + '</div>' +
+            '<a href="' + waEng + '" target="_blank" class="btn-primary" style="display:inline-block;text-decoration:none;">📲 Send English on WhatsApp</a>');
+    }
+
+    function openPaidModal(id, invNo, amt) {
+        openModal('✔ Confirm Payment — ' + invNo,
+            '<p class="muted" style="margin-bottom:12px;">Verify bank/UPI credit of <b>₹' + amt.toLocaleString('en-IN') + '</b></p>' +
+            '<div class="form-group"><label>Bank UTR / UPI Reference Number</label>' +
+            '<input type="text" id="paidUtrInput" placeholder="e.g., UTR6319048211" required></div>' +
+            '<button class="btn-primary full-width" onclick="confirmMarkPaid(' + id + ')">Confirm & Update Ledger</button>');
+    }
+
+    async function confirmMarkPaid(id) {
+        const ref = document.getElementById('paidUtrInput').value || 'BANK-VERIFIED';
+        await fetch('/api/recovery/mark-paid/' + id, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentRef: ref })
+        });
+        closeModal();
+        loadDashboard();
+    }
+
+    async function openMsmeModal(id) {
+        openModal('⚖️ MSME Samadhaan & Section 15 Assistant', '<p>Generating legal guidance...</p>');
+        const res = await fetch('/api/recovery/msme-guidance/' + id);
+        const data = await res.json();
+        openModal('⚖️ MSME Recovery Guidance (' + data.invoiceNumber + ')',
+            '<p style="color:#fbbf24;margin-bottom:10px;"><b>Overdue: ' + data.overdueDays + ' Days</b> — MSMED Act 2006 Section 15 Protection</p>' +
+            '<div class="ai-box">' + data.guidance + '</div>');
+    }
+
+    async function verifyUpiText(e) {
+        e.preventDefault();
+        const res = await fetch('/api/recovery/upi-check-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: currentUser.id,
+                claimedUpi: document.getElementById('checkClaimedUpi').value,
+                expectedAmount: document.getElementById('checkExpectedAmt').value,
+                claimedAmount: document.getElementById('checkClaimedAmt').value
+            })
+        });
+        const data = await res.json();
+        const box = document.getElementById('upiResultBox');
+        box.classList.remove('hidden');
+        const isSafe = data.status === 'VERIFIED_MATCH';
+        box.style.borderLeft = isSafe ? '4px solid #10b981' : '4px solid #ef4444';
+        box.innerHTML = '<h3>' + (isSafe ? '✅ UPI Details Match' : '🚨 FRAUD / MISMATCH ALERT') + '</h3><p style="margin-top:8px;">' + data.message + '</p>';
+    }
+
+    async function verifyUpiImage() {
+        const file = document.getElementById('upiFile').files[0];
+        if (!file) return;
+        document.getElementById('upiImgStatus').innerText = '⏳ AI analyzing screenshot...';
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('userId', currentUser.id);
+        fd.append('expectedAmount', document.getElementById('imgExpectedAmt').value);
+        const res = await fetch('/api/recovery/upi-check-image', { method: 'POST', body: fd });
+        const data = await res.json();
+        document.getElementById('upiImgStatus').innerText = 'Upload Customer\'s WhatsApp Payment Screenshot';
+        const box = document.getElementById('upiResultBox');
+        box.classList.remove('hidden');
+        const isSafe = data.status === 'SAFE_MATCH';
+        box.style.borderLeft = isSafe ? '4px solid #10b981' : '4px solid #ef4444';
+        box.innerHTML = '<h3>' + (isSafe ? '✅ Screenshot Payee Verified' : '🚨 SUSPICIOUS SCREENSHOT') + '</h3>' +
+            '<p style="margin-top:8px;"><b>Extracted UPI:</b> ' + data.extractedUpiId + ' | <b>Amount:</b> ₹' + data.extractedAmount + ' | <b>UTR:</b> ' + data.utrNumber + '</p>' +
+            '<p style="margin-top:6px;color:#fbbf24;">' + data.riskReason + '</p>';
+    }
+
+    async function loadCustomers() {
+        const res = await fetch('/api/invoices/customers/' + currentUser.id);
+        const list = await res.json();
+        document.getElementById('customerTableBody').innerHTML = list.map(c =>
+            '<tr><td><b>' + c.name + '</b></td><td>' + (c.phone || '-') + '</td><td>' + (c.knownUpiId || '-') + '</td>' +
+            '<td>' + c.totalInvoices + '</td><td style="color:' + (c.delayedInvoices > 0 ? '#f87171' : '#34d399') + '">' + c.delayedInvoices + '</td>' +
+            '<td>' + c.avgDelayDays + ' days</td></tr>'
+        ).join('');
+    }
+
+    async function updateProfile(e) {
+        e.preventDefault();
+        const res = await fetch('/api/auth/profile/' + currentUser.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                businessName: document.getElementById('profBizName').value,
+                ownerName: document.getElementById('profOwner').value,
+                registeredUpiId: document.getElementById('profUpi').value,
+                gstNumber: document.getElementById('profGst').value,
+                udyamNumber: document.getElementById('profUdyam').value
+            })
+        });
+        currentUser = await res.json();
+        syncUserUI();
+        alert('Business & UPI Profile Updated!');
+    }
+
+    let recognition = null;
+    let isListening = false;
+
+    function stopVoiceAndClose() {
+        if (recognition && isListening) recognition.stop();
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        document.getElementById('voiceBubble').classList.add('hidden');
+    }
+
+    function speakText(text) {
+        lastSpokenReply = text;
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : 'en-IN';
+        utter.rate = 1.0;
+        window.speechSynthesis.speak(utter);
+    }
+
+    function replayLastVoice() {
+        if (lastSpokenReply) speakText(lastSpokenReply);
+    }
+
+    async function processVoiceQuery(queryText) {
+        const transcriptEl = document.getElementById('voiceTranscript');
+        const replyEl = document.getElementById('voiceReply');
+        transcriptEl.innerText = '🗣️ "' + queryText + '"';
+        replyEl.innerText = '⏳ DueGuard AI checking your invoices...';
+
+        const lower = queryText.toLowerCase();
+        if (lower.includes('upi') || lower.includes('fraud') || lower.includes('shield')) {
+            showSection('upi', document.querySelectorAll('.nav-item')[2]);
+        } else if (lower.includes('scan') || lower.includes('add invoice')) {
+            showSection('add', document.querySelectorAll('.nav-item')[1]);
+        } else if (lower.includes('customer') || lower.includes('ledger')) {
+            showSection('customers', document.querySelectorAll('.nav-item')[3]);
+        }
+
+        try {
+            const res = await fetch('/api/recovery/voice-ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, query: queryText })
+            });
+            const data = await res.json();
+            replyEl.innerText = data.reply;
+            speakText(data.reply);
+        } catch (err) {
+            replyEl.innerText = 'Network error. Please try again.';
+        }
+    }
+
+    async function sendTypedVoiceQuery() {
+        const inp = document.getElementById('voiceTextInput');
+        const q = inp.value.trim();
+        if (!q || !currentUser) return;
+        inp.value = '';
+        await processVoiceQuery(q);
+    }
+
+    function toggleVoiceAssistant() {
+        if (!currentUser) return alert('Pehle Dashboard Login karein!');
+        const bubble = document.getElementById('voiceBubble');
+        const transcriptEl = document.getElementById('voiceTranscript');
+        const replyEl = document.getElementById('voiceReply');
+        const micBtn = document.getElementById('micFabBtn');
+        bubble.classList.remove('hidden');
+
+        if (isListening && recognition) {
+            recognition.stop();
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            transcriptEl.innerText = '⚠️ Speech-to-Text not supported — type below:';
+            return;
+        }
+
+        try {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.style.background = '#ef4444';
+                transcriptEl.innerText = '🎧 Listening... Boliye (e.g., "Shiv Enterprises ke kitne days left hai?")';
+                replyEl.innerText = '';
+            };
+
+            recognition.onresult = async (event) => {
+                const spokenText = event.results[0][0].transcript;
+                await processVoiceQuery(spokenText);
+            };
+
+            recognition.onerror = (e) => {
+                transcriptEl.innerText = '⚠️ Mic (' + e.error + ') — type below & AI will reply with Voice!';
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.style.background = 'linear-gradient(135deg,#2563eb,#06b6d4)';
+            };
+
+            recognition.start();
+        } catch (e) {
+            transcriptEl.innerText = '⚠️ Type your question below & click Ask for Voice AI response:';
+        }
+    }
+</script>
+</body>
+</html>
